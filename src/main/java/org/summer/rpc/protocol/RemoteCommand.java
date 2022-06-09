@@ -15,6 +15,7 @@ public class RemoteCommand {
     //对于request，是请求业务编码；对于response，是处理状态，或者称为错误码
     private Integer code;
     private String remark;
+    private boolean oneWay;
     private byte[] body;
 
     public void setType(RemoteCommandType type) {
@@ -55,6 +56,14 @@ public class RemoteCommand {
 
     public void setRemark(String remark) {
         this.remark = remark;
+    }
+
+    public boolean isOneWay() {
+        return oneWay;
+    }
+
+    public void setOneWay(boolean oneWay) {
+        this.oneWay = oneWay;
     }
 
     //便捷的编解码body方法

@@ -10,6 +10,10 @@ public interface RpcService {
 
     void shutdown();
 
+    void registerDefaultProcessor(NettyRequestProcessor processor, ExecutorService executor);
+
+    ProcessorPair getDefaultProcessorPair();
+
     void registerProcessor(int requestCode, NettyRequestProcessor processor, ExecutorService executor);
 
     void setCallbackExecutor(ExecutorService executor);
