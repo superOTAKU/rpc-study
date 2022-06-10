@@ -19,8 +19,8 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class AbstractRpcService implements RpcService {
-    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractRpcService.class);
+public abstract class AbstractNettyRpcService implements RpcService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractNettyRpcService.class);
 
     protected ProcessorPair defaultProcessorPair;
     protected final Map<Integer, ProcessorPair> requestProcessorMap = new HashMap<>();
@@ -61,6 +61,9 @@ public abstract class AbstractRpcService implements RpcService {
         }
     }
 
+    /**
+     * 分发请求到具体业务线程池
+     */
     protected void handleRequestCommand(ChannelHandlerContext ctx, RemoteCommand request) {
         ProcessorPair pair = Optional.ofNullable(requestProcessorMap.get(request.getCode())).orElse(defaultProcessorPair);
         if (pair == null) {
@@ -77,6 +80,9 @@ public abstract class AbstractRpcService implements RpcService {
         });
     }
 
+    /**
+     * 处理返回的响应
+     */
     protected void handleResponseCommand(ChannelHandlerContext ctx, RemoteCommand response) {
         ResponseFuture responseFuture = responseFutureMap.remove(response.getRequestId());
         if (responseFuture == null) {
@@ -99,7 +105,7 @@ public abstract class AbstractRpcService implements RpcService {
             if (future.isSuccess()) {
                 responseFuture.setSendRequestOk(true);
             } else {
-                responseFuture.completeFutureExceptionally(future.cause());
+                responseFuture.completeFuture(null);
                 responseFuture.executeCallback();
                 responseFutureMap.remove(request.getRequestId());
             }

@@ -2,8 +2,10 @@ package org.summer.rpc.protocol;
 
 import com.alibaba.fastjson2.JSON;
 import com.alibaba.fastjson2.TypeReference;
+import io.netty.buffer.ByteBuf;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 /**
@@ -66,6 +68,17 @@ public class RemoteCommand {
         this.oneWay = oneWay;
     }
 
+    @Override
+    public String toString() {
+        return "RemoteCommand{" +
+                "type=" + type +
+                ", requestId=" + requestId +
+                ", code=" + code +
+                ", remark='" + remark + '\'' +
+                ", oneWay=" + oneWay +
+                '}';
+    }
+
     //便捷的编解码body方法
 
     public <T> T decodeJsonBody(Class<T> type) {
@@ -97,7 +110,41 @@ public class RemoteCommand {
     public static RemoteCommand newResponse(int code) {
         RemoteCommand response = new RemoteCommand();
         response.setType(RemoteCommandType.RESPONSE);
+        response.setCode(code);
         return response;
+    }
+
+    //----------------------编解码--------------------------
+
+    public static RemoteCommand decode(ByteBuf byteBuf) {
+        RemoteCommand command = new RemoteCommand();
+        int length = byteBuf.readInt();
+        command.setType(RemoteCommandType.values()[byteBuf.readInt()]);
+        command.setRequestId(byteBuf.readInt());
+        command.setCode(byteBuf.readInt());
+        int remarkLen = byteBuf.readInt();
+        byte[] remark = new byte[remarkLen];
+        byteBuf.readBytes(remark);
+        command.setRemark(new String(remark, StandardCharsets.UTF_8));
+        command.setOneWay(byteBuf.readBoolean());
+        int bodyLen = length - 21 - remarkLen;
+        byte[] body  = new byte[bodyLen];
+        byteBuf.readBytes(body);
+        command.setBody(body);
+        return command;
+    }
+
+    public static void encode(ByteBuf byteBuf, RemoteCommand command) {
+        byte[] commandBytes = command.getRemark() == null ? new byte[0] : command.getRemark().getBytes(StandardCharsets.UTF_8);
+        int totalLen = 21 + commandBytes.length + command.getBody().length;
+        byteBuf.writeInt(totalLen);
+        byteBuf.writeInt(command.getType().ordinal());
+        byteBuf.writeInt(command.getRequestId());
+        byteBuf.writeInt(command.getCode());
+        byteBuf.writeInt(commandBytes.length);
+        byteBuf.writeBytes(commandBytes);
+        byteBuf.writeBoolean(command.isOneWay());
+        byteBuf.writeBytes(command.getBody());
     }
 
 }
