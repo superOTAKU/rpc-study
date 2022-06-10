@@ -22,9 +22,9 @@ public class RpcClientTest {
         private static final Logger LOGGER = LoggerFactory.getLogger(DefaultProcessor.class);
         @Override
         public RemoteCommand processRequest(ChannelHandlerContext ctx, RemoteCommand request) {
-            LOGGER.info("request: {}", request);
+            LOGGER.info("request: {}, {}", request, request.getBodyUtf8());
             RemoteCommand response = RemoteCommand.newResponse();
-            response.setBody("Hello World".getBytes(StandardCharsets.UTF_8));
+            response.setJsonBody("Hello Server");
             return response;
         }
     }
@@ -36,9 +36,9 @@ public class RpcClientTest {
         NettyRpcClient client = new NettyRpcClient(config);
         client.registerDefaultProcessor(new DefaultProcessor(), Executors.newFixedThreadPool(4));
         client.start();
-        RemoteCommand request = RemoteCommand.newRequest(RequestCode.SAY_HELLO, "hello server".getBytes(StandardCharsets.UTF_8));
+        RemoteCommand request = RemoteCommand.newJsonRequest(RequestCode.SAY_HELLO, "hello server");
         client.invokeAsync(new InetSocketAddress("localhost", 8888), request, f -> {
-            System.out.println("response: " + f.getResponseNow());
+            System.out.println("response: " + f.getResponseNow() + ", " + f.getResponseNow().getBodyUtf8());
         });
     }
 

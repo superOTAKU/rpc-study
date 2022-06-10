@@ -9,7 +9,6 @@ import org.summer.rpc.netty.NettyServerConfig;
 import org.summer.rpc.protocol.RemoteCommand;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 
 public class RpcServerTest {
@@ -19,9 +18,9 @@ public class RpcServerTest {
         private static final Logger LOGGER = LoggerFactory.getLogger(DefaultProcessor.class);
         @Override
         public RemoteCommand processRequest(ChannelHandlerContext ctx, RemoteCommand request) {
-            LOGGER.info("request: {}", request);
+            LOGGER.info("request: {}, {}", request, request.getBodyUtf8());
             RemoteCommand response = RemoteCommand.newResponse();
-            response.setBody("Hello World".getBytes(StandardCharsets.UTF_8));
+            response.setJsonBody("Hello Client");
             return response;
         }
     }

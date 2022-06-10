@@ -5,7 +5,6 @@ import com.alibaba.fastjson2.TypeReference;
 import io.netty.buffer.ByteBuf;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
 import java.util.function.Supplier;
 
 /**
@@ -52,6 +51,10 @@ public class RemoteCommand {
         return body;
     }
 
+    public String getBodyUtf8() {
+        return new String(body, StandardCharsets.UTF_8);
+    }
+
     public String getRemark() {
         return remark;
     }
@@ -89,10 +92,18 @@ public class RemoteCommand {
         return JSON.parseObject(new String(body, StandardCharsets.UTF_8), typeReference);
     }
 
+    public void setJsonBody(Object body) {
+        this.body = JSON.toJSONBytes(body);
+    }
+
     //便捷的工厂方法
 
     public static RemoteCommand newRequest(int code, Supplier<byte[]> bodySupplier) {
         return newRequest(code, bodySupplier);
+    }
+
+    public static RemoteCommand newJsonRequest(int code, Object body) {
+        return newRequest(code, JSON.toJSONBytes(body));
     }
 
     public static RemoteCommand newRequest(int code, byte[] body) {
