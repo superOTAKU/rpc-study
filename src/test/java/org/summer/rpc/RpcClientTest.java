@@ -9,7 +9,6 @@ import org.summer.rpc.netty.NettyRpcClient;
 import org.summer.rpc.protocol.RemoteCommand;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 
 public class RpcClientTest {

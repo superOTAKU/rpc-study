@@ -1,7 +1,10 @@
 package org.summer.rpc.netty;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.timeout.IdleStateEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.summer.rpc.InvokeCallback;
@@ -27,6 +30,9 @@ public abstract class AbstractNettyRpcService implements RpcService {
     protected final ConcurrentMap<Integer, ResponseFuture> responseFutureMap = new ConcurrentHashMap<>();
     protected ExecutorService callbackExecutor;
     protected final AtomicInteger requestId = new AtomicInteger(0);
+    //负责网络连接事件处理
+    protected ChannelEventListener channelEventListener;
+    protected ExecutorService channelEventExecutor;
 
     @Override
     public void registerProcessor(int requestCode, NettyRequestProcessor processor, ExecutorService executor) {
@@ -111,6 +117,67 @@ public abstract class AbstractNettyRpcService implements RpcService {
             }
         });
         return rf;
+    }
+
+    public ChannelEventListener getChannelEventListener() {
+        return channelEventListener;
+    }
+
+    public void setChannelEventListener(ChannelEventListener channelEventListener) {
+        this.channelEventListener = channelEventListener;
+    }
+
+    public ExecutorService getChannelEventExecutor() {
+        return channelEventExecutor;
+    }
+
+    public void setChannelEventExecutor(ExecutorService channelEventExecutor) {
+        this.channelEventExecutor = channelEventExecutor;
+    }
+
+    @ChannelHandler.Sharable
+    class NettyChannelEventHandler extends ChannelDuplexHandler {
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            LOGGER.error("channel {} exception", ctx.channel(), cause);
+            if (getChannelEventExecutor() != null && getChannelEventListener() != null) {
+                getChannelEventExecutor().execute(() -> getChannelEventListener().onException(ctx.channel(), cause));
+            }
+            //一旦发送异常，这个channel必须被close
+            ctx.channel().close();
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+            super.channelInactive(ctx);
+            LOGGER.info("channel {} inactive", ctx.channel());
+            if (getChannelEventExecutor() != null && getChannelEventListener() != null) {
+                getChannelEventExecutor().execute(() -> getChannelEventListener().onClosed(ctx.channel()));
+            }
+        }
+
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            super.channelActive(ctx);
+            LOGGER.info("channel {} active", ctx.channel());
+            if (getChannelEventExecutor() != null && getChannelEventListener() != null) {
+                getChannelEventExecutor().execute(() -> getChannelEventListener().onConnected(ctx.channel()));
+            }
+        }
+
+        @Override
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+            super.userEventTriggered(ctx, evt);
+            if (evt instanceof IdleStateEvent) {
+                IdleStateEvent idleStateEvent = (IdleStateEvent)evt;
+                LOGGER.info("channel {} idle {}", ctx.channel(), idleStateEvent.state());
+                if (getChannelEventExecutor() != null && getChannelEventListener() != null) {
+                    getChannelEventExecutor().execute(() -> getChannelEventListener().onIdle(ctx.channel(), idleStateEvent.state()));
+                }
+            }
+        }
+
     }
 
 }

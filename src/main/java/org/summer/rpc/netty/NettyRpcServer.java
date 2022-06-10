@@ -5,6 +5,7 @@ import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.concurrent.DefaultEventExecutorGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,7 +46,7 @@ public class NettyRpcServer extends AbstractNettyRpcService implements RpcServer
                     protected void initChannel(NioSocketChannel ch) {
                         ChannelPipeline p = ch.pipeline();
                         p.addLast(eventExecutorGroup, new NettyDecoder(), new NettyEncoder(),
-                                new NettyConnectionManager(),
+                                new NettyChannelEventHandler(),
                                 new NettyServerHandler());
                     }
                 });
@@ -64,6 +65,9 @@ public class NettyRpcServer extends AbstractNettyRpcService implements RpcServer
         }
         if (defaultProcessorPair != null) {
             defaultProcessorPair.getExecutor().shutdown();
+        }
+        if (channelEventExecutor != null) {
+            channelEventExecutor.shutdown();
         }
     }
 
@@ -85,28 +89,5 @@ public class NettyRpcServer extends AbstractNettyRpcService implements RpcServer
         }
     }
 
-    /**
-     * TODO 完善连接管理机制
-     */
-    static class NettyConnectionManager extends ChannelDuplexHandler {
-
-        @Override
-        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-            LOGGER.error("netty exception", cause);
-        }
-
-        @Override
-        public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
-            super.disconnect(ctx, promise);
-            LOGGER.info("channel {} disconnected", ctx.channel());
-        }
-
-        @Override
-        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
-            super.channelInactive(ctx);
-            LOGGER.info("channel {} {} inactive", ctx.channel(), ctx.channel().remoteAddress());
-        }
-
-    }
 
 }

@@ -46,7 +46,8 @@ public class NettyRpcClient extends AbstractNettyRpcService implements RpcClient
                     @Override
                     protected void initChannel(NioSocketChannel ch) {
                         ChannelPipeline p = ch.pipeline();
-                        p.addLast(eventExecutorGroup, new NettyDecoder(), new NettyEncoder(), new NettyClientHandler());
+                        p.addLast(eventExecutorGroup, new NettyDecoder(), new NettyEncoder(),
+                                new NettyChannelEventHandler(), new NettyClientHandler());
                     }
                 });
     }
