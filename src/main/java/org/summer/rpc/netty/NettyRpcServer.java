@@ -44,7 +44,9 @@ public class NettyRpcServer extends AbstractNettyRpcService implements RpcServer
                     @Override
                     protected void initChannel(NioSocketChannel ch) {
                         ChannelPipeline p = ch.pipeline();
-                        p.addLast(eventExecutorGroup, new NettyDecoder(), new NettyEncoder(), new NettyServerHandler());
+                        p.addLast(eventExecutorGroup, new NettyDecoder(), new NettyEncoder(),
+                                new NettyConnectionManager(),
+                                new NettyServerHandler());
                     }
                 });
         bootstrap.bind(config.getBindAddress()).syncUninterruptibly();
@@ -81,6 +83,30 @@ public class NettyRpcServer extends AbstractNettyRpcService implements RpcServer
         protected void channelRead0(ChannelHandlerContext ctx, RemoteCommand msg) throws Exception {
             handleReceivedCommand(ctx, msg);
         }
+    }
+
+    /**
+     * TODO 完善连接管理机制
+     */
+    static class NettyConnectionManager extends ChannelDuplexHandler {
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+            LOGGER.error("netty exception", cause);
+        }
+
+        @Override
+        public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+            super.disconnect(ctx, promise);
+            LOGGER.info("channel {} disconnected", ctx.channel());
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+            super.channelInactive(ctx);
+            LOGGER.info("channel {} {} inactive", ctx.channel(), ctx.channel().remoteAddress());
+        }
+
     }
 
 }

@@ -69,12 +69,12 @@ public class NettyRpcClient extends AbstractNettyRpcService implements RpcClient
 
     @Override
     public void invokeAsync(InetSocketAddress remoteAddr, RemoteCommand request, InvokeCallback callback) {
-        doInvokeAsync(getOrCreateChannel(remoteAddr), request, callback);
+        doInvokeAsync(Objects.requireNonNull(getOrCreateChannel(remoteAddr)), request, callback);
     }
 
     @Override
     public RemoteCommand invokeSync(InetSocketAddress remoteAddr, RemoteCommand request) {
-        return doInvokeAsync(getOrCreateChannel(remoteAddr), request, null).awaitResponse(30, TimeUnit.SECONDS);
+        return doInvokeAsync(Objects.requireNonNull(getOrCreateChannel(remoteAddr)), request, null).awaitResponse(30, TimeUnit.SECONDS);
     }
 
     private Channel getOrCreateChannel(InetSocketAddress remoteAddr) {

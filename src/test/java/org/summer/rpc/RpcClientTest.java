@@ -29,7 +29,7 @@ public class RpcClientTest {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws Exception {
         NettyClientConfig config = new NettyClientConfig();
         config.setWorkerThreadCount(4);
         config.setCallbackThreadCount(4);
@@ -40,6 +40,8 @@ public class RpcClientTest {
         client.invokeAsync(new InetSocketAddress("localhost", 8888), request, f -> {
             System.out.println("response: " + f.getResponseNow() + ", " + f.getResponseNow().getBodyUtf8());
         });
+        Thread.sleep(3000);
+        client.shutdown();
     }
 
 }
